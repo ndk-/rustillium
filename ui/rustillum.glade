@@ -7,9 +7,38 @@
     <property name="default_height">400</property>
     <property name="window_position">center</property>
     <child>
-      <object class="GtkTreeView" id="tree_view">
-        <property name="hexpand">True</property>
-        <property name="vexpand">True</property>
+      <object class="GtkBox" id="main_box">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkTreeView" id="tree_view">
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <child>
+              <object class="GtkTreeViewColumn" id="section_name_column">
+                <property name="title">Section</property>
+                <child>
+                  <object class="GtkCellRendererText" id="section_name_cell_renderer"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="section_credential_name">
+                <property name="title">Credential name</property>
+                <child>
+                  <object class="GtkCellRendererText" id="section_credential_name_text"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="section_credential_value">
+                <property name="title">Credential value</property>
+                <child>
+                  <object class="GtkCellRendererText" id="section_credential_value_text"/>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
   </object>
