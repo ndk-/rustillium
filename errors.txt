@@ -1,0 +1,43 @@
+error[E0432]: unresolved import `toml::Table`
+ --> src/main.rs:3:5
+  |
+3 | use toml::Table;
+  |     ^^^^^^^^^^^ no `Table` in the root
+  |
+help: consider importing one of these items instead
+  |
+3 | use toml::Value::Table;
+  |     ~~~~~~~~~~~~~~~~~~
+3 | use toml::value::Table;
+  |     ~~~~~~~~~~~~~~~~~~
+ 
+error[E0599]: the method `append` exists for struct `ListBox`, but its trait bounds were not satisfied
+  --> src/main.rs:40:18
+   |
+40 |           list_box.append(&row);
+   |                    ^^^^^^ method cannot be called on `ListBox` due to unsatisfied trait bounds
+   |
+  ::: /home/muerte/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gtk-0.18.2/src/auto/list_box.rs:16:1
+   |
+16 | / glib::wrapper! {
+17 | |     #[doc(alias = "GtkListBox")]
+18 | |     pub struct ListBox(Object<ffi::GtkListBox, ffi::GtkListBoxClass>) ...
+...  |
+23 | | }
+   | |_- doesn't satisfy 10 bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `gtk::ListBox: IsA<UnixFDList>`
+           which is required by `gtk::ListBox: gtk::prelude::UnixFDListExtManual`
+           `gtk::ListBox: IsA<ComboBoxText>`
+           which is required by `gtk::ListBox: gtk::prelude::ComboBoxTextExt`
+           `gtk::ListBox: IsA<gtk::ListStore>`
+           which is required by `gtk::ListBox: gtk::prelude::GtkListStoreExt`
+           `gtk::ListBox: IsA<MenuShell>`
+           which is required by `gtk::ListBox: gtk::prelude::MenuShellExt`
+           `gtk::ListBox: IsA<TreeStore>`
+           which is required by `gtk::ListBox: gtk::prelude::TreeStoreExt`
+ 
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `rustillum` (bin "rustillum") due to 2 previous errors

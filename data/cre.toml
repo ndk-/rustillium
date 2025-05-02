@@ -1,0 +1,16 @@
+[bank]
+login = "username"
+password = "hiddensecret"
+extrafield = "something more"
+another = "even more"
+
+[credit]
+login = "unionname"
+password = "secret2"
+
+[social]
+login = "socialaccount"
+password = "somethinghere"
+email = "abc@cbs.com"
+
+

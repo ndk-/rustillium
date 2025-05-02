@@ -1,0 +1,7 @@
+As a user
+I want to be able to see credentials and extra fields in each of the sections
+So that I can use those credentials
+
+Given: I opened my application and it is displaying all sections as described in story1
+When: I click on one of the sections
+Then: the section expands and shows credentials and all extra fields that belong to that section
