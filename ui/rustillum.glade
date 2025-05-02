@@ -5,6 +5,7 @@
     <property name="title">Rustillum</property>
     <property name="default_width">600</property>
     <property name="default_height">400</property>
+    <property name="window_position">center</property>
     <child>
       <object class="GtkTreeView" id="tree_view">
         <property name="hexpand">True</property>
