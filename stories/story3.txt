@@ -1,0 +1,7 @@
+As a user
+I want to be able to copy credentials and extra field values from each of the sections
+So that I can use those credentials
+
+Given: I opened my application and expanded one of the sections
+When: I select text of the value
+Then: I am able to copy the selected value
