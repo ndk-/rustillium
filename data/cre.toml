@@ -13,4 +13,10 @@ login = "socialaccount"
 password = "somethinghere"
 email = "abc@cbs.com"
 
+[secretapp]
+login = "app1"
+password = "dhgswkj"
+email = "abc@cbs.com"
+something = "here"
+bla = "there"
 

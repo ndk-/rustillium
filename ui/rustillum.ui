@@ -7,8 +7,14 @@
     <property name="default_height">400</property>
     <property name="window_position">center</property>
     <child>
-      <object class="GtkBox" id="main_box">
-        <property name="orientation">vertical</property>
+      <object class="GtkScrolledWindow" id="scrolled_window">
+        <property name="vexpand">True</property>
+        <property name="hexpand">True</property>
+        <child>
+          <object class="GtkBox" id="main_box">
+            <property name="orientation">vertical</property>
+          </object>
+        </child>
       </object>
     </child>
   </object>
