@@ -1,0 +1,7 @@
+As a user
+I want to be able to search for a section by name
+So that I can quickly find the section I'm looking for
+
+Given: I have opened my application and it is displaying all sections as described in story1
+When: I type a search term in the search box
+Then: The application filters the sections and displays only the sections whose names contain the search term (case-insensitive)

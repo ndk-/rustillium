@@ -1,11 +1,14 @@
 use gtk::prelude::*;
 use gtk::{ApplicationWindow, Box, Builder};
-use std::fs;
-use toml::Value;
+use std::rc::Rc;
+
+pub mod app_ui;
+pub mod credentials_provider;
+
+use crate::credentials_provider::CredentialsProvider;
+use crate::app_ui::AppUI;
 
 const APP_ID: &str = "org.rustillum.ui";
-
-mod app_ui;
 
 fn main() {
     // Create a new application
@@ -24,11 +27,10 @@ fn build_ui(application: &gtk::Application) {
     let window: ApplicationWindow = builder.object("window").expect("Couldn't get window");
     window.set_application(Some(application));
 
-    let credentials_as_string = fs::read_to_string("data/cre.toml").expect("Couldn't read cre.toml");
-    let credentials: Value = toml::from_str(&credentials_as_string).expect("Couldn't parse cre.toml");
+    let credentials_provider = Rc::new(CredentialsProvider::new("./secrets"));
 
     let main_content = build_main_component(builder);
-    let ui = app_ui::AppUI::new(main_content, credentials);
+    let ui = AppUI::new(main_content, credentials_provider);
 
     ui.populate_content();
 
