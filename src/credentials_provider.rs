@@ -14,26 +14,16 @@ impl CredentialsProvider {
     }
 
     pub fn load_secret_names(self: &Self) -> Result<Vec<String>, Box<dyn error::Error>> {
-        let mut secret_names = Vec::new();
+        
         let file_names = fs::read_dir(Path::new(&self.directory_name))?;
         let mut directory_entries = (file_names.collect::<Result<Vec<_>, _>>())?;
         directory_entries.sort_by_key(|dir| dir.path());
 
-        for entry in directory_entries {
-            let path = entry.path();
-
-            if path.is_file() {
-                if let Some(extension) = path.extension() {
-                    if extension == "toml" {
-                        if let Some(file_stem) = path.file_stem() {
-                            if let Some(secret_name) = file_stem.to_str() {
-                                secret_names.push(secret_name.to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        let secret_names: Vec<String> = directory_entries.iter()
+            .filter(|entry| entry.path().is_file())
+            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "toml"))
+            .filter_map(|entry| entry.path().file_stem().and_then(|stem| stem.to_str()).map(|stem| stem.to_string()))
+            .collect();
 
         Ok(secret_names)
     }
