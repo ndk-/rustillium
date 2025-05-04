@@ -29,12 +29,12 @@ impl CredentialsProvider {
     }
 
     pub fn load_secrets(self: &Self, secret_name: &str) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
-        let file_path = Path::new(&self.directory_name).join(format!("{}.toml", secret_name));
-        
-        let contents = fs::read_to_string(file_path)?;
+        let contents = fs::read_to_string(
+            Path::new(&self.directory_name).join(
+                format!("{}.toml", secret_name)
+            )
+        )?;
 
-        let secrets: HashMap<String, String> = toml::from_str(&contents)?;
-
-        Ok(secrets)
+        Ok(toml::from_str(&contents)?)
     }
 }

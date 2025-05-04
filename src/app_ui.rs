@@ -8,7 +8,7 @@ pub struct AppUI {
     credentials_provider: Rc<CredentialsProvider>,
 }
 
-impl AppUI {
+impl AppUI {    
     pub fn new(main_content: Box, credentials: Rc<CredentialsProvider>) -> Self {
         Self { main_content, credentials_provider: credentials }
     }
