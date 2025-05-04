@@ -2,11 +2,11 @@ use gtk::prelude::*;
 use gtk::{ApplicationWindow, Box, Builder};
 use std::rc::Rc;
 
-pub mod app_ui;
+pub mod gtk_ui;
 pub mod credentials_provider;
 
 use crate::credentials_provider::CredentialsProvider;
-use crate::app_ui::AppUI;
+use crate::gtk_ui::GtkUI;
 
 const APP_ID: &str = "org.rustillum.ui";
 
@@ -30,7 +30,7 @@ fn build_ui(application: &gtk::Application) {
     let credentials_provider = Rc::new(CredentialsProvider::new("./secrets"));
 
     let main_content = build_main_component(builder);
-    let ui = AppUI::new(main_content, credentials_provider);
+    let ui = GtkUI::new(main_content, credentials_provider);
 
     ui.populate_content();
 

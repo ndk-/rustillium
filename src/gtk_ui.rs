@@ -3,12 +3,12 @@ use std::{collections::HashMap, rc::Rc};
 
 use crate::credentials_provider::CredentialsProvider;
 
-pub struct AppUI {
+pub struct GtkUI {
     main_content: Box,
     credentials_provider: Rc<CredentialsProvider>,
 }
 
-impl AppUI {    
+impl GtkUI {    
     pub fn new(main_content: Box, credentials: Rc<CredentialsProvider>) -> Self {
         Self { main_content, credentials_provider: credentials }
     }
@@ -28,7 +28,7 @@ impl AppUI {
                 .build();
 
             secret_section.connect_expanded_notify(
-                AppUI::populate_secrets(
+                GtkUI::populate_secrets(
                     Rc::clone(&self.credentials_provider)
                 )
             );
@@ -42,7 +42,7 @@ impl AppUI {
             let secret_name = expander.widget_name();
             let secrets = credentials_provider.load_secrets(secret_name.as_str()).expect(format!("Can't load a secret {}", secret_name.as_str()).as_str());
 
-            let grid = AppUI::build_grid(&secrets);
+            let grid = GtkUI::build_grid(&secrets);
             grid.show_all();
 
             if let Some(child) = expander.child() {
@@ -83,12 +83,12 @@ impl AppUI {
 
             let mut index_offset = 0;
             if let Some(login) = section.get("login") {
-                AppUI::build_row(&grid, "login", login, 0);
+                GtkUI::build_row(&grid, "login", login, 0);
                 index_offset = index_offset + 1;
             }
 
             if let Some(password) = section.get("password") {
-                AppUI::build_row(&grid, "password", password, 1);
+                GtkUI::build_row(&grid, "password", password, 1);
                 index_offset = index_offset + 1;
             }
 
@@ -96,7 +96,7 @@ impl AppUI {
                 if key == "login" || key == "password" {
                     continue;
                 }
-                AppUI::build_row(&grid, key, value, (index as i32) + index_offset);
+                GtkUI::build_row(&grid, key, value, (index as i32) + index_offset);
             }
         grid
     }
