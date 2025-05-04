@@ -3,5 +3,5 @@ I want to be able to copy credentials and extra field values from each of the se
 So that I can use those credentials
 
 Given: I opened my application and expanded one of the sections
-When: I select text of the value
-Then: I am able to copy the selected value
+When: I click on the one of the secrets values
+Then: The value is copied to the clipboard

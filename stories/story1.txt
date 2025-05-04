@@ -2,6 +2,6 @@ As a user
 I want to be able to view all my stored sections that contain username, password, and some extra fields
 So that I can find which section I need to expand to see my credentials
 
-Given: I have my credentials file (unencrypted for now)
+Given: I have my credentials files (unencrypted for now)
 When: I open my application
-Then: I see all the sections (websites/apps) that has credentials stored in my file
+Then: I see all the sections (websites/apps) that has credentials stored in my files
