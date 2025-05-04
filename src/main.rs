@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{ApplicationWindow, Box, Builder};
+use gtk::{ApplicationWindow, Builder};
 use std::rc::Rc;
 
 pub mod gtk_ui;
@@ -29,28 +29,10 @@ fn build_ui(application: &gtk::Application) {
 
     let credentials_provider = Rc::new(CredentialsProvider::new("./secrets"));
 
-    let main_content = build_main_component(builder);
-    let ui = GtkUI::new(main_content, credentials_provider);
+    let ui = GtkUI::new(builder, credentials_provider);
 
-    ui.populate_content();
+    ui.build();
 
     window.show_all();
 }
 
-fn build_main_component(builder: Builder) -> Box {
-    let main_content: Box = builder.object("main_box").expect("Couldn't get tree_view");
-
-    main_content.style_context().add_class("large-font");
-    let provider = gtk::CssProvider::new();
-
-    provider
-        .load_from_data(b".large-font { font-size: 12pt }")
-        .expect("Can't load from data");
-
-    gtk::StyleContext::add_provider_for_screen(
-        &gtk::gdk::Screen::default().expect("Error initializing gtk css provider."),
-        &provider,
-        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-    );
-    main_content
-}

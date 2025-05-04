@@ -1,4 +1,5 @@
-use gtk::{traits::{BinExt, BoxExt, ButtonExt, ContainerExt, ExpanderExt, GridExt, WidgetExt}, Box, Button, Clipboard, Expander, Grid, Label};
+use gtk::prelude::*;
+use gtk::{Box, Button, Clipboard, Expander, Grid, Label, Builder};
 use std::{collections::HashMap, rc::Rc};
 
 use crate::credentials_provider::CredentialsProvider;
@@ -9,12 +10,30 @@ pub struct GtkUI {
 }
 
 impl GtkUI {    
-    pub fn new(main_content: Box, credentials: Rc<CredentialsProvider>) -> Self {
+    pub fn new(builder: Builder, credentials: Rc<CredentialsProvider>) -> Self {
+        let main_content = builder.object("main_box").expect("Couldn't get tree_view");
+
         Self { main_content, credentials_provider: credentials }
     }
 
-    pub fn populate_content(self: &Self) {
+    pub fn build(self: &Self) {
+        self.style_main_component();
         self.populate_secret_names();
+    }
+
+    fn style_main_component(self: &Self) {
+        self.main_content.style_context().add_class("large-font");
+        let provider = gtk::CssProvider::new();
+    
+        provider
+            .load_from_data(b".large-font { font-size: 12pt }")
+            .expect("Can't load from data");
+    
+        gtk::StyleContext::add_provider_for_screen(
+            &gtk::gdk::Screen::default().expect("Error initializing gtk css provider."),
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
     }
 
     fn populate_secret_names(self: &Self) {
