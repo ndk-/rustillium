@@ -16,10 +16,10 @@ impl CredentialsProvider {
     pub fn load_secret_names(self: &Self) -> Result<Vec<String>, Box<dyn error::Error>> {
         let mut secret_names = Vec::new();
         let file_names = fs::read_dir(Path::new(&self.directory_name))?;
-        let mut entries = (file_names.collect::<Result<Vec<_>, _>>())?;
-        entries.sort_by_key(|dir| dir.path());
+        let mut directory_entries = (file_names.collect::<Result<Vec<_>, _>>())?;
+        directory_entries.sort_by_key(|dir| dir.path());
 
-        for entry in entries {
+        for entry in directory_entries {
             let path = entry.path();
 
             if path.is_file() {
@@ -43,8 +43,8 @@ impl CredentialsProvider {
         
         let contents = fs::read_to_string(file_path)?;
 
-        let data: HashMap<String, String> = toml::from_str(&contents)?;
+        let secrets: HashMap<String, String> = toml::from_str(&contents)?;
 
-        Ok(data)
+        Ok(secrets)
     }
 }
