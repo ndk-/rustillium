@@ -1,28 +1,40 @@
 use gtk::prelude::*;
-use gtk::{Box, Button, Clipboard, Expander, Grid, Label, Builder};
+use gtk::{Box, Button, Clipboard, Expander, Grid, Label, Builder, ApplicationWindow};
 use std::{collections::HashMap, rc::Rc};
 
 use crate::credentials_provider::CredentialsProvider;
 
 pub struct GtkUI {
-    main_content: Box,
+    builder: Builder,
     credentials_provider: Rc<CredentialsProvider>,
 }
 
 impl GtkUI {    
-    pub fn new(builder: Builder, credentials: Rc<CredentialsProvider>) -> Self {
-        let main_content = builder.object("main_box").expect("Couldn't get tree_view");
-
-        Self { main_content, credentials_provider: credentials }
+    pub fn new(credentials_provider: Rc<CredentialsProvider>) -> Self {
+        let builder = Builder::from_file("ui/rustillum.ui");
+        Self { builder, credentials_provider }
     }
 
-    pub fn build(self: &Self) {
+    pub fn show(self: &Self, application: &gtk::Application) {
+        let window = self.get_window();
+        window.set_application(Some(application));
+
         self.style_main_component();
-        self.populate_secret_names();
+        self.build_secrets_component();
+
+        window.show_all();
+    }
+
+    fn get_window(self: &Self) -> ApplicationWindow {
+        return self.builder.object("window").expect("Couldn't get window");
+    }
+
+    fn get_main_component(self: &Self) -> Box {
+        return self.builder.object("main_box").expect("Couldn't get main component");
     }
 
     fn style_main_component(self: &Self) {
-        self.main_content.style_context().add_class("large-font");
+        self.get_main_component().style_context().add_class("large-font");
         let provider = gtk::CssProvider::new();
     
         provider
@@ -36,8 +48,9 @@ impl GtkUI {
         );
     }
 
-    fn populate_secret_names(self: &Self) {
+    fn build_secrets_component(self: &Self) {
         let secret_names = self.credentials_provider.load_secret_names().expect("unable to load secret names");
+        let main_component = self.get_main_component();
         for section_name in secret_names {
             let secret_section = Expander::builder()
                 .use_markup(true)
@@ -47,21 +60,21 @@ impl GtkUI {
                 .build();
 
             secret_section.connect_expanded_notify(
-                GtkUI::populate_secrets(
+                GtkUI::on_expanded_populate_secrets(
                     Rc::clone(&self.credentials_provider)
                 )
             );
 
-            self.main_content.pack_start(&secret_section, false, false, 5);
+            main_component.pack_start(&secret_section, false, false, 5);
         }
     }
 
-    fn populate_secrets(credentials_provider: Rc<CredentialsProvider>) -> impl Fn(&Expander) {
+    fn on_expanded_populate_secrets(credentials_provider: Rc<CredentialsProvider>) -> impl Fn(&Expander) {
         move |expander| {
             let secret_name = expander.widget_name();
             let secrets = credentials_provider.load_secrets(secret_name.as_str()).expect(format!("Can't load a secret {}", secret_name.as_str()).as_str());
 
-            let grid = GtkUI::build_grid(&secrets);
+            let grid = GtkUI::build_single_secret_section(&secrets);
             grid.show_all();
 
             if let Some(child) = expander.child() {
@@ -72,7 +85,30 @@ impl GtkUI {
         }
     }
     
-    fn build_row(grid: &Grid, name: &str, value: &str, index: i32) {
+    fn build_single_secret_section(section: &HashMap<String, String>) -> Grid {
+        let grid = Grid::builder().column_spacing(25).row_spacing(5).build();
+
+            let mut index_offset = 0;
+            if let Some(login) = section.get("login") {
+                GtkUI::build_single_secret(&grid, "login", login, 0);
+                index_offset = index_offset + 1;
+            }
+
+            if let Some(password) = section.get("password") {
+                GtkUI::build_single_secret(&grid, "password", password, 1);
+                index_offset = index_offset + 1;
+            }
+
+            for (index, (key, value)) in section.iter().enumerate() {
+                if key == "login" || key == "password" {
+                    continue;
+                }
+                GtkUI::build_single_secret(&grid, key, value, (index as i32) + index_offset);
+            }
+        grid
+    }
+
+    fn build_single_secret(grid: &Grid, name: &str, value: &str, index: i32) {
         let name_label = Label::builder()
             .use_markup(true)
             .label(&format!("<i>{}</i>", name))
@@ -95,29 +131,6 @@ impl GtkUI {
         });
 
         grid.attach(&value_button, 1, index, 1, 1);
-    }
-
-    fn build_grid(section: &HashMap<String, String>) -> Grid {
-        let grid = Grid::builder().column_spacing(25).row_spacing(5).build();
-
-            let mut index_offset = 0;
-            if let Some(login) = section.get("login") {
-                GtkUI::build_row(&grid, "login", login, 0);
-                index_offset = index_offset + 1;
-            }
-
-            if let Some(password) = section.get("password") {
-                GtkUI::build_row(&grid, "password", password, 1);
-                index_offset = index_offset + 1;
-            }
-
-            for (index, (key, value)) in section.iter().enumerate() {
-                if key == "login" || key == "password" {
-                    continue;
-                }
-                GtkUI::build_row(&grid, key, value, (index as i32) + index_offset);
-            }
-        grid
     }
 }
 
