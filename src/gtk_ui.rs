@@ -1,18 +1,19 @@
 use gtk::prelude::*;
-use gtk::{Box, Button, Clipboard, Expander, Grid, Label, Builder, ApplicationWindow};
+use gtk::{Box, Button, Clipboard, Expander, Grid, Label, Builder, ApplicationWindow, SearchBar, SearchEntry};
+use gtk::glib::Object;
 use std::{collections::HashMap, rc::Rc};
 
 use crate::credentials_provider::CredentialsProvider;
 
 pub struct GtkUI {
-    builder: Builder,
+    builder: Rc<Builder>,
     credentials_provider: Rc<CredentialsProvider>,
 }
 
 impl GtkUI {    
     pub fn new(credentials_provider: Rc<CredentialsProvider>) -> Self {
-        let builder = Builder::from_file("ui/rustillum.ui");
-        Self { builder, credentials_provider }
+        let builder = Rc::from(Builder::from_file("ui/rustillum.ui"));
+        Self { builder, credentials_provider}
     }
 
     pub fn show(self: &Self, application: &gtk::Application) {
@@ -20,17 +21,42 @@ impl GtkUI {
         window.set_application(Some(application));
 
         self.style_main_component();
+        self.build_search_component();
         self.build_secrets_component();
 
         window.show_all();
     }
 
+    fn build_search_component(self: &Self) {
+        let search_bar: SearchBar = self.get_component("search_bar");
+        search_bar.set_search_mode(true);
+
+        let search_entry: SearchEntry = self.get_component("search_entry");
+
+        let builder = Rc::clone(&self.builder);
+        search_entry.connect_changed(GtkUI::on_search_filter_results(builder));
+    }
+
+    fn on_search_filter_results(builder: Rc<Builder>) -> impl Fn(&SearchEntry) {
+        move |entry| {
+            let parent: Box = builder.object("main_box").expect("Can't find main component");
+            for child in parent.children() {
+                let visibility = child.widget_name().contains(entry.text().as_str());
+                child.set_visible(visibility); 
+            }
+        }
+    }
+
+    fn get_component<T: IsA<Object>>(self: &Self, component_name: &str) -> T {
+        return self.builder.object(component_name).expect(format!("Couldn't get component: {}", component_name).as_str());
+    }
+
     fn get_window(self: &Self) -> ApplicationWindow {
-        return self.builder.object("window").expect("Couldn't get window");
+        return self.get_component("window");
     }
 
     fn get_main_component(self: &Self) -> Box {
-        return self.builder.object("main_box").expect("Couldn't get main component");
+        return self.get_component("main_box");
     }
 
     fn style_main_component(self: &Self) {
@@ -53,8 +79,8 @@ impl GtkUI {
         let main_component = self.get_main_component();
         for section_name in secret_names {
             let secret_section = Expander::builder()
-                .use_markup(true)
                 .name(&section_name)
+                .use_markup(true)
                 .label(&format!("<b>{}</b>", &section_name))
                 .expanded(false)
                 .build();
@@ -133,4 +159,3 @@ impl GtkUI {
         grid.attach(&value_button, 1, index, 1, 1);
     }
 }
-
