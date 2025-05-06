@@ -18,7 +18,7 @@ fn main() {
 }
 
 fn build_ui(application: &gtk::Application) {
-    let credentials_provider = Rc::new(CredentialsProvider::new("./secrets"));
+    let credentials_provider = Rc::new(CredentialsProvider::new("./enc"));
 
     let ui = GtkUI::new(credentials_provider);
 
