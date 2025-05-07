@@ -1,9 +1,12 @@
 use gtk::prelude::*;
-use gtk::{Box, Button, Clipboard, Expander, Grid, Label, Builder, ApplicationWindow, SearchBar, SearchEntry};
+use gtk::{Box, Button, Clipboard, Expander, Grid, Label, Builder, ApplicationWindow, SearchBar, SearchEntry, Dialog};
 use gtk::glib::Object;
 use std::{collections::HashMap, rc::Rc};
 
 use crate::credentials_provider::CredentialsProvider;
+
+const DIALOG: &str = include_str!("../ui/simple_dialog.ui");
+const MAIN_UI: &str = include_str!("../ui/rustillum.ui");
 
 pub struct GtkUI {
     builder: Rc<Builder>,
@@ -12,7 +15,7 @@ pub struct GtkUI {
 
 impl GtkUI {    
     pub fn new(credentials_provider: Rc<CredentialsProvider>) -> Self {
-        let builder = Rc::from(Builder::from_file("ui/rustillum.ui"));
+        let builder = Rc::from(Builder::from_string(MAIN_UI));
         Self { builder, credentials_provider}
     }
 
@@ -98,7 +101,10 @@ impl GtkUI {
     fn on_expanded_populate_secrets(credentials_provider: Rc<CredentialsProvider>) -> impl Fn(&Expander) {
         move |expander| {
             let secret_name = expander.widget_name();
-            let secrets = credentials_provider.load_secrets(secret_name.as_str()).expect(format!("Can't load a secret {}", secret_name.as_str()).as_str());
+            let secrets = credentials_provider.load_secrets(secret_name.as_str()).unwrap_or_else(|err| {
+                GtkUI::show_simple_dialog("Error", format!("Error: {}", err).as_str());
+                return HashMap::new();
+            });
 
             let grid = GtkUI::build_single_secret_section(&secrets);
             grid.show_all();
@@ -157,5 +163,18 @@ impl GtkUI {
         });
 
         grid.attach(&value_button, 1, index, 1, 1);
+    }
+
+    fn show_simple_dialog(title: &str, message: &str) {
+        let builder = Builder::from_string(DIALOG);
+        let dialog: Dialog = builder.object("simple_dialog").expect("Cannot find simple dialog");
+        let dialog_label: Label = builder.object("simple_label").expect("Cannot find simple label");
+
+        dialog.set_title(title);
+        dialog_label.set_text(message);
+
+        if let gtk::ResponseType::Ok = dialog.run() {
+            dialog.hide()
+        }
     }
 }

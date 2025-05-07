@@ -36,7 +36,7 @@ impl CredentialsProvider {
         ))?;
 
         let mut secrets_bytes = Vec::new();
-        context.decrypt(&mut secrets_file, &mut secrets_bytes).map_err(|err| format!("Error while decrypting {}", err))?;
+        context.decrypt(&mut secrets_file, &mut secrets_bytes)?;
 
 
         let secrets_content = String::from_utf8(secrets_bytes)?;
