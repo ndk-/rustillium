@@ -1,0 +1,18 @@
+# Rustillium
+
+## Stories
+I keep track of most of my work in stories (not all) that are located in `stories` directory
+
+## Requirements
+I built this on Gentoo Linux. This app is currently will only work on a Linux distribution that has the following:
+- rust with cargo (tested on 1.85)
+- gtk 3 (tested on 3.24)
+- gpgme (tested on 1.24)
+
+# Steps to compile/run
+1. Check `secrets` folder for examples of secret files and their format
+1. As an example, encrypt one or more files from `secrets` folder using `gpg`
+    - an example command to encrypt `gpg -r recipient@email.com -e bank.toml`
+1. Once encrypted, move encrypted files to `enc` folder (make sure they have gpg extension)
+1. Either compile rust binary or just run `cargo run`
+1. You should see the encrypted files and rustillium should be able to decrypt them using `gpg` when clicked.
