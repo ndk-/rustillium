@@ -10,8 +10,8 @@ pub struct CredentialsProvider {
 }
 
 impl CredentialsProvider {
-    pub fn new(directory_name: &str) -> Self {
-        Self { directory_name: directory_name.to_string() }
+    pub fn new(directory_name: String) -> Self {
+        Self { directory_name: directory_name }
     }
 
     pub fn load_secret_names(self: &Self) -> Result<Vec<String>, Box<dyn error::Error>> {
