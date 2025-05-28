@@ -8,3 +8,4 @@ gtk = { version = "0.18", features = ["v3_24"] } # Specifying GTK 3.24 features
 gpgme = "0.11"
 toml = "0.8.22"
 config = "0.15.11"
+eframe = { version = "0.31.1", features = ["wgpu"] }
