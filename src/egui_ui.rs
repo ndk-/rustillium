@@ -2,7 +2,7 @@
 #![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
 use crate::credentials_provider::CredentialsProvider;
-use eframe::egui::{self, Button, TextEdit};
+use eframe::egui::{self, popup_below_widget, Button, Id, TextEdit, Widget};
 use std::collections::HashMap;
 
 pub struct AppUI {
@@ -68,14 +68,24 @@ impl AppUI {
             }
 
             maybe_secrets.unwrap().iter().for_each(|(key, value)| {
-                ui.horizontal(|ui| {
+                let id= Id::new(key);
+
+                let layout = ui.horizontal( |ui| {
                     ui.label(key);
-                    if ui
-                        .add_sized(ui.available_size(), Button::new(value))
-                        .clicked()
-                    {
-                        ui.ctx().copy_text(value.to_string());
-                    };
+                    
+                    ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                        let button = Button::new(value).fill(ui.ctx().theme().default_visuals().extreme_bg_color).ui(ui);
+                        if button.clicked() {
+                            ui.ctx().copy_text(value.to_string());
+                            ui.memory_mut(|writer| {
+                                writer.toggle_popup(id);
+                            })
+                        };
+                    });
+                }).response;
+
+                popup_below_widget(ui, id, &layout, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+                    ui.label("Secret has been copied!");
                 });
             });
         });
