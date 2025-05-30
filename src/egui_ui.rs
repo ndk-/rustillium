@@ -1,17 +1,29 @@
 use crate::credentials_provider::CredentialsProvider;
-use eframe::egui::{self, Align, Button, CentralPanel, Id, Layout, PopupCloseBehavior, ScrollArea, TextEdit, ViewportBuilder, Widget};
+use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Layout, PopupCloseBehavior, ScrollArea, TextEdit, Ui, ViewportBuilder, Widget};
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
+
+struct PopupState {
+    id: Id,
+    opened_at: Instant,
+}
 
 pub struct AppUI {
     credentials_provider: CredentialsProvider,
+    search_field: Id,
+    popup_state: Option<PopupState>,
 }
 
 impl AppUI {
     pub fn new(credentials_provider: CredentialsProvider) -> Self {
-        Self { credentials_provider }
+        Self {
+            credentials_provider,
+            search_field: Id::new("search_field"),
+            popup_state: None,
+        }
     }
 
-    pub fn show(self) -> eframe::Result {
+    pub fn show(mut self) -> eframe::Result {
         let options = eframe::NativeOptions {
             viewport: ViewportBuilder::default().with_inner_size([320.0, 240.0]),
             ..Default::default()
@@ -21,14 +33,36 @@ impl AppUI {
         let secrets = self.credentials_provider.load_secret_names().expect("Failed to load secret names");
 
         eframe::run_simple_native("Rustillium", options, move |ctx, _frame| {
+            self.create_keyboard_shortcut(ctx);
+
             CentralPanel::default().show(ctx, |ui| {
                 self.build_search_field(ui, &mut search_term);
                 self.build_secrets_section(ui, &search_term, &secrets);
             });
+
+            self.handle_popup(ctx);
         })
     }
 
-    fn build_secrets_section(&self, ui: &mut egui::Ui, search_term: &str, secrets: &Vec<String>) {
+    fn create_keyboard_shortcut(&mut self, ctx: &egui::Context) {
+        if ctx.input(|i| i.key_pressed(Key::F) && i.modifiers.ctrl) {
+            ctx.memory_mut(|m| m.request_focus(self.search_field));
+        }
+    }
+
+    fn handle_popup(&mut self, ctx: &egui::Context) {
+        if let Some(popup) = &self.popup_state {
+            if popup.opened_at.elapsed() >= Duration::from_secs(1) {
+                ctx.memory_mut(|writer| {
+                    writer.toggle_popup(popup.id);
+                });
+                self.popup_state = None;
+            }
+            ctx.request_repaint_after(Duration::from_micros(500));
+        }
+    }
+
+    fn build_secrets_section(&mut self, ui: &mut egui::Ui, search_term: &str, secrets: &Vec<String>) {
         ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
             secrets.into_iter().filter(|secret| secret.contains(search_term)).for_each(|secret| {
                 self.build_secret_section(ui, &secret);
@@ -36,7 +70,7 @@ impl AppUI {
         });
     }
 
-    fn build_secret_section(&self, ui: &mut egui::Ui, secret: &str) {
+    fn build_secret_section(&mut self, ui: &mut egui::Ui, secret: &str) {
         ui.collapsing(secret, |ui| {
             self.load_secrets(ui, secret).iter().for_each(|(key, value)| {
                 let id = Id::new(key);
@@ -49,9 +83,8 @@ impl AppUI {
                             let button = Button::new(value).fill(ui.ctx().theme().default_visuals().extreme_bg_color).ui(ui);
                             if button.clicked() {
                                 ui.ctx().copy_text(value.clone());
-                                ui.memory_mut(|writer| {
-                                    writer.toggle_popup(id);
-                                })
+
+                                self.create_popup(id, ui);
                             };
                         });
                     })
@@ -62,6 +95,12 @@ impl AppUI {
                 });
             });
         });
+    }
+
+    fn create_popup(&mut self, id: Id, ui: &mut Ui) {
+        ui.memory_mut(|writer| writer.toggle_popup(id));
+
+        self.popup_state = Some(PopupState { id: id, opened_at: Instant::now() });
     }
 
     fn load_secrets(&self, ui: &mut egui::Ui, secret: &str) -> Vec<(String, String)> {
@@ -82,15 +121,15 @@ impl AppUI {
     fn build_search_field(&self, ui: &mut egui::Ui, search_term: &mut String) {
         ui.horizontal(|ui| {
             ui.label("Search: ");
-            ui.add_sized(ui.available_size(), TextEdit::singleline(search_term).hint_text("search by secret name"));
+            ui.add_sized(ui.available_size(), TextEdit::singleline(search_term).id(self.search_field).hint_text("search by secret name"));
         });
     }
 
     fn to_displayed_secrets(mut secrets: HashMap<String, String>) -> Vec<(String, String)> {
         let mut result: Vec<(String, String)> = Vec::new();
 
-        if let Some(login) = secrets.remove("login") {
-            result.push(("login".to_string(), login));
+        if let Some(username) = secrets.remove("username") {
+            result.push(("username".to_string(), username));
         }
         if let Some(password) = secrets.remove("password") {
             result.push(("password".to_string(), password));
