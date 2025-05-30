@@ -20,9 +20,17 @@ fn main() {
 }
 
 fn build_ui(application: &gtk::Application) {
+    let credentials_provider = configure_credentials_provider();
+
+    let ui = GtkUI::new(credentials_provider);
+
+    ui.show(application);
+}
+
+fn configure_credentials_provider() -> Rc<CredentialsProvider> {
     let mut config_path = environment_variable("HOME").unwrap_or(".".to_string());
     config_path.push_str("/.config/rustillium/config.toml");
-
+    
     let config = Config::builder()
         .add_source(config::File::with_name(config_path.as_str()).required(false))
         .add_source(config::Environment::with_prefix("RUSTILLIUM"))
@@ -32,10 +40,6 @@ fn build_ui(application: &gtk::Application) {
     let secrets_directory = config
         .get_string("secrets_directory")
         .unwrap_or("./enc".to_string());
-
-    let credentials_provider = Rc::new(CredentialsProvider::new(secrets_directory));
-
-    let ui = GtkUI::new(credentials_provider);
-
-    ui.show(application);
+    
+    return Rc::new(CredentialsProvider::new(&secrets_directory));
 }
