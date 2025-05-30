@@ -6,7 +6,6 @@ I keep track of most of my work in stories (not all) that are located in `storie
 ## Requirements
 I built this on Gentoo Linux. This app is currently will only work on a Linux distribution that has the following:
 - rust with cargo (tested on 1.85)
-- gtk 3 (tested on 3.24)
 - gpgme (tested on 1.24)
 
 # Steps to compile/run
