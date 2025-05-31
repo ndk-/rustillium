@@ -25,7 +25,7 @@ impl AppUI {
 
     pub fn show(mut self) -> eframe::Result {
         let options = eframe::NativeOptions {
-            viewport: ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+            viewport: ViewportBuilder::default().with_inner_size([640.0, 480.0]),
             ..Default::default()
         };
 
@@ -34,6 +34,8 @@ impl AppUI {
 
         eframe::run_simple_native("Rustillium", options, move |ctx, _frame| {
             self.create_keyboard_shortcuts(ctx);
+            
+            AppUI::apply_custom_styles(ctx);
 
             CentralPanel::default().show(ctx, |ui| {
                 self.build_search_field(ui, &mut search_term);
@@ -44,6 +46,15 @@ impl AppUI {
 
             self.handle_popup(ctx);
         })
+    }
+
+    fn apply_custom_styles(ctx: &egui::Context) {
+        ctx.style_mut(|style| {
+            style.text_styles.insert(egui::TextStyle::Button, egui::FontId::new(16.00, egui::FontFamily::Proportional));
+            style.text_styles.insert(egui::TextStyle::Body, egui::FontId::new(16.00, egui::FontFamily::Proportional));
+            style.text_styles.insert(egui::TextStyle::Monospace, egui::FontId::new(16.00, egui::FontFamily::Monospace));
+            style.spacing.button_padding = egui::vec2(4.0, 2.0);
+        });
     }
 
     fn build_bottom_panel(ctx: &egui::Context) {
