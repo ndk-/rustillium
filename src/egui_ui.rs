@@ -33,7 +33,7 @@ impl AppUI {
         let secrets = self.credentials_provider.load_secret_names().expect("Failed to load secret names");
 
         eframe::run_simple_native("Rustillium", options, move |ctx, _frame| {
-            self.create_keyboard_shortcut(ctx);
+            self.create_keyboard_shortcuts(ctx);
 
             CentralPanel::default().show(ctx, |ui| {
                 self.build_search_field(ui, &mut search_term);
@@ -51,17 +51,25 @@ impl AppUI {
             ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
                 ui.add_space(6.0);
                 if ui.button("Exit").clicked() {
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    AppUI::close(ctx);
                 };
                 ui.add_space(2.0);
             });
         });
     }
 
-    fn create_keyboard_shortcut(&mut self, ctx: &egui::Context) {
+    fn create_keyboard_shortcuts(&mut self, ctx: &egui::Context) {
         if ctx.input(|i| i.key_pressed(Key::F) && i.modifiers.ctrl) {
             ctx.memory_mut(|m| m.request_focus(self.search_field));
         }
+
+        if ctx.input(|i| i.key_pressed(Key::Q) && i.modifiers.ctrl) {
+            AppUI::close(ctx);
+        }
+    }
+
+    fn close(ctx: &egui::Context) {
+        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
     }
 
     fn handle_popup(&mut self, ctx: &egui::Context) {
