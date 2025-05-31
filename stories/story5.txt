@@ -10,7 +10,7 @@ Then: The application starts correctly and reads from the provided directory
 
 Scenario #2:
 Given: I have a secrets directory with gpg encrypted files that contain secrets AND
-Given: I have a configuration file config.toml in directory $HOME/.config/rustillum with secrets_directory setting defined with the correct path
+Given: I have a configuration file config.toml in directory $HOME/.config/rustillium with secrets_directory setting defined with the correct path
 When: I open my application
 Then: The application starts correctly and reads from the provided directory
 
