@@ -1,5 +1,5 @@
 use crate::credentials_provider::CredentialsProvider;
-use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Layout, PopupCloseBehavior, ScrollArea, TextEdit, Ui, ViewportBuilder, Widget};
+use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Layout, PopupCloseBehavior, ScrollArea, TextEdit, TopBottomPanel, Ui, ViewportBuilder, Widget};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -40,8 +40,22 @@ impl AppUI {
                 self.build_secrets_section(ui, &search_term, &secrets);
             });
 
+            AppUI::build_bottom_panel(ctx);
+
             self.handle_popup(ctx);
         })
+    }
+
+    fn build_bottom_panel(ctx: &egui::Context) {
+        TopBottomPanel::bottom("bottom_panel").show_separator_line(true).show(ctx, |ui| {
+            ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
+                ui.add_space(6.0);
+                if ui.button("Exit").clicked() {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                };
+                ui.add_space(2.0);
+            });
+        });
     }
 
     fn create_keyboard_shortcut(&mut self, ctx: &egui::Context) {
