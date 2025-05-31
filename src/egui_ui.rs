@@ -76,7 +76,7 @@ impl AppUI {
             self.initial_search_focus = true;
         }
     }
-    
+
     fn apply_custom_styles(ctx: &egui::Context) {
         ctx.style_mut(|style| {
             style.text_styles.insert(egui::TextStyle::Button, egui::FontId::new(16.00, egui::FontFamily::Proportional));
