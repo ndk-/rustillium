@@ -1,5 +1,5 @@
 use crate::credentials_provider::CredentialsProvider;
-use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Layout, PopupCloseBehavior, ScrollArea, TextEdit, TopBottomPanel, Ui, ViewportBuilder, Widget};
+use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Label, Layout, PopupCloseBehavior, ScrollArea, TextEdit, TopBottomPanel, Ui, ViewportBuilder, ViewportId, Widget};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -12,6 +12,8 @@ pub struct AppUI {
     credentials_provider: CredentialsProvider,
     search_field: Id,
     popup_state: Option<PopupState>,
+    dialog_secrets: HashMap<String, String>,
+    open_dialog: bool
 }
 
 impl AppUI {
@@ -20,6 +22,8 @@ impl AppUI {
             credentials_provider,
             search_field: Id::new("search_field"),
             popup_state: None,
+            dialog_secrets: HashMap::new(),
+            open_dialog: false
         }
     }
 
@@ -42,9 +46,24 @@ impl AppUI {
                 self.build_secrets_section(ui, &search_term, &secrets);
             });
 
-            AppUI::build_bottom_panel(ctx);
+            self.build_bottom_panel(ctx);
 
             self.handle_popup(ctx);
+
+            if self.open_dialog {
+                let secrets_dialog = egui::ViewportBuilder::default().with_title("add a new secret").with_close_button(true).with_decorations(true);
+                let dialog_id = ViewportId::from_hash_of("secrets_dialog");
+                ctx.show_viewport_immediate(dialog_id, secrets_dialog, |ctx, _| {
+                    if ctx.input(|input_state| input_state.viewport().close_requested()) {
+                        self.open_dialog = false;
+                    }
+                    CentralPanel::default().show(ctx, |ui| {
+                        if ui.button("close").clicked() {
+                            self.open_dialog = false;
+                        }
+                    });
+                });
+            }
         })
     }
 
@@ -57,13 +76,18 @@ impl AppUI {
         });
     }
 
-    fn build_bottom_panel(ctx: &egui::Context) {
+    fn build_bottom_panel(&mut self, ctx: &egui::Context) {
         TopBottomPanel::bottom("bottom_panel").show_separator_line(true).show(ctx, |ui| {
             ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
                 ui.add_space(6.0);
-                if ui.button("Exit").clicked() {
-                    AppUI::close(ctx);
-                };
+                ui.horizontal(|ui| {
+                    if ui.button("Exit").clicked() {
+                        AppUI::close(ctx);
+                    };
+                    if ui.button("Add").clicked() {
+                        self.open_dialog = true;
+                    }
+                });
                 ui.add_space(2.0);
             });
         });
