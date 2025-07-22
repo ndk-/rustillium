@@ -86,9 +86,7 @@ impl AppUI {
     fn handle_popup(&mut self, ctx: &egui::Context) {
         if let Some(popup) = &self.popup_state {
             if popup.opened_at.elapsed() >= Duration::from_secs(1) {
-                ctx.memory_mut(|writer| {
-                    writer.toggle_popup(popup.id);
-                });
+                egui::Popup::close_id(ctx, popup.id);
                 self.popup_state = None;
             }
             ctx.request_repaint_after(Duration::from_micros(500));
@@ -106,34 +104,26 @@ impl AppUI {
     fn build_secret_section(&mut self, ui: &mut egui::Ui, secret: &str) {
         ui.collapsing(secret, |ui| {
             self.load_secrets(ui, secret).iter().for_each(|(key, value)| {
-                let id = Id::new(key);
 
-                let layout = ui
-                    .horizontal(|ui| {
+                ui.horizontal(|ui| {
                         ui.label(key);
 
                         ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
+                            let popup_id = Id::new(key);
                             let button = Button::new(value).fill(ui.ctx().theme().default_visuals().extreme_bg_color).ui(ui);
+
                             if button.clicked() {
+                                self.popup_state = Some(PopupState { id: popup_id, opened_at: Instant::now() });
                                 ui.ctx().copy_text(value.clone());
+                            }
 
-                                self.create_popup(id, ui);
-                            };
+                            egui::Popup::from_toggle_button_response(&button).close_behavior(PopupCloseBehavior::CloseOnClick).id(popup_id).show(|ui| {
+                                ui.label("Secret has been copied!");
+                            });
                         });
-                    })
-                    .response;
-
-                egui::popup_below_widget(ui, id, &layout, PopupCloseBehavior::CloseOnClick, |ui| {
-                    ui.label("Secret has been copied!");
                 });
             });
         });
-    }
-
-    fn create_popup(&mut self, id: Id, ui: &mut Ui) {
-        ui.memory_mut(|writer| writer.toggle_popup(id));
-
-        self.popup_state = Some(PopupState { id: id, opened_at: Instant::now() });
     }
 
     fn load_secrets(&self, ui: &mut egui::Ui, secret: &str) -> Vec<(String, String)> {
