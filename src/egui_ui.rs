@@ -1,5 +1,5 @@
 use crate::credentials_provider::CredentialsProvider;
-use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Layout, PopupCloseBehavior, ScrollArea, TextEdit, TopBottomPanel, Ui, ViewportBuilder, Widget};
+use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Layout, PopupCloseBehavior, ScrollArea, TextEdit, TopBottomPanel, ViewportBuilder, Widget};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
