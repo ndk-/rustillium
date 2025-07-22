@@ -11,6 +11,7 @@ struct PopupState {
 pub struct AppUI {
     credentials_provider: CredentialsProvider,
     search_field: Id,
+    initial_search_focus: bool,
     popup_state: Option<PopupState>,
 }
 
@@ -19,6 +20,7 @@ impl AppUI {
         Self {
             credentials_provider,
             search_field: Id::new("search_field"),
+            initial_search_focus: false,
             popup_state: None,
         }
     }
@@ -34,6 +36,7 @@ impl AppUI {
 
         eframe::run_simple_native("Rustillium", options, move |ctx, _frame| {
             self.create_keyboard_shortcuts(ctx);
+            self.focus_on_search(ctx);
             
             AppUI::apply_custom_styles(ctx);
 
@@ -48,6 +51,13 @@ impl AppUI {
         })
     }
 
+    fn focus_on_search(&mut self, ctx: &egui::Context) {
+        if !self.initial_search_focus {
+            ctx.memory_mut(|m| m.request_focus(self.search_field));
+            self.initial_search_focus = true;
+        }
+    }
+    
     fn apply_custom_styles(ctx: &egui::Context) {
         ctx.style_mut(|style| {
             style.text_styles.insert(egui::TextStyle::Button, egui::FontId::new(16.00, egui::FontFamily::Proportional));
