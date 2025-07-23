@@ -5,6 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use toml;
 
+#[derive(Clone)]
 pub struct CredentialsProvider {
     path: PathBuf,
 }

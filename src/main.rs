@@ -2,6 +2,7 @@ use config::Config;
 use std::env::var as environment_variable;
 
 pub mod credentials_provider;
+pub mod add_edit_dialog;
 pub mod egui_ui;
 
 use crate::credentials_provider::CredentialsProvider;
@@ -10,7 +11,7 @@ use crate::egui_ui::AppUI;
 fn main() -> eframe::Result {
     let credentials_provider = configure_credential_provider();
 
-    let ui = AppUI::new(credentials_provider);
+    let ui = AppUI::new(&credentials_provider);
 
     return ui.show();
 }

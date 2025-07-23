@@ -1,5 +1,6 @@
 use crate::credentials_provider::CredentialsProvider;
-use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Layout, PopupCloseBehavior, ScrollArea, TextEdit, TopBottomPanel, ViewportBuilder, ViewportId, Widget};
+use crate::add_edit_dialog::AddEditDialog;
+use eframe::egui::{self, Align, Button, CentralPanel, Id, Key, Layout, PopupCloseBehavior, ScrollArea, TextEdit, TopBottomPanel, ViewportBuilder, Widget};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -13,19 +14,17 @@ pub struct AppUI {
     search_field: Id,
     initial_search_focus: bool,
     popup_state: Option<PopupState>,
-    dialog_secrets: HashMap<String, String>,
-    open_dialog: bool
+    add_edit_dialog: AddEditDialog,
 }
 
 impl AppUI {
-    pub fn new(credentials_provider: CredentialsProvider) -> Self {
+    pub fn new(credentials_provider: &CredentialsProvider) -> Self {
         Self {
-            credentials_provider,
+            credentials_provider: credentials_provider.clone(),
             search_field: Id::new("search_field"),
             initial_search_focus: false,
             popup_state: None,
-            dialog_secrets: HashMap::new(),
-            open_dialog: false
+            add_edit_dialog: AddEditDialog::new(credentials_provider),
         }
     }
 
@@ -52,21 +51,7 @@ impl AppUI {
             self.build_bottom_panel(ctx);
 
             self.handle_popup(ctx);
-
-            if self.open_dialog {
-                let secrets_dialog = egui::ViewportBuilder::default().with_title("add a new secret").with_close_button(true).with_decorations(true);
-                let dialog_id = ViewportId::from_hash_of("secrets_dialog");
-                ctx.show_viewport_immediate(dialog_id, secrets_dialog, |ctx, _| {
-                    if ctx.input(|input_state| input_state.viewport().close_requested()) {
-                        self.open_dialog = false;
-                    }
-                    CentralPanel::default().show(ctx, |ui| {
-                        if ui.button("close").clicked() {
-                            self.open_dialog = false;
-                        }
-                    });
-                });
-            }
+            self.add_edit_dialog.show(ctx);
         })
     }
 
@@ -95,7 +80,7 @@ impl AppUI {
                         AppUI::close(ctx);
                     };
                     if ui.button("Add").clicked() {
-                        self.open_dialog = true;
+                        self.add_edit_dialog.open("");
                     }
                 });
                 ui.add_space(2.0);
