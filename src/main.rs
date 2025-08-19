@@ -1,18 +1,19 @@
 use config::Config;
-use std::env::var as environment_variable;
+use std::{env::var as environment_variable, rc::Rc};
 
 pub mod credentials_provider;
-pub mod egui_ui;
+pub mod delete_secret;
+pub mod modify_secret;
+pub mod view_secret;
 
-use crate::credentials_provider::CredentialsProvider;
-use crate::egui_ui::AppUI;
+use crate::{credentials_provider::CredentialsProvider, view_secret::ViewSecretUI};
 
 fn main() -> eframe::Result {
     let credentials_provider = configure_credential_provider();
 
-    let ui = AppUI::new(credentials_provider);
+    let view_secret_ui = ViewSecretUI::new(&Rc::new(credentials_provider));
 
-    return ui.show();
+    return view_secret_ui.show();
 }
 
 fn configure_credential_provider() -> CredentialsProvider {
@@ -26,6 +27,7 @@ fn configure_credential_provider() -> CredentialsProvider {
         .expect("Cannot read configuration");
 
     let secrets_directory = config.get_string("secrets_directory").unwrap_or("./enc".to_string());
+    let recipient_email = config.get_string("recipient_email").expect("recipient_email is not set in the configuration");
 
-    return CredentialsProvider::new(&secrets_directory);
+    return CredentialsProvider::new(&secrets_directory, &recipient_email);
 }

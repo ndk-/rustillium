@@ -1,0 +1,33 @@
+As a user
+I want to be able to rename an existing secret
+So that I can keep name of a secret relevant
+
+Scenario #1:
+    Given: The application is open and displays a list of secrets
+    When: I expand a secret section
+    And: I click the "settings" icon (⛭)
+    And: I click the "Modify" button
+    Then: A dialog titled "Modify Secret: <secret_name>" appears
+    And: The dialog is pre-filled with the secret's data
+    And: I see the name of the secret in editable field at the bottom left corner of the window in line with "Save" button
+    When: I change the value the name of the secret
+    And: I click the "Save" button
+    Then: The encrypted file for that secret is renamed with the new name
+    And: The dialog closes
+    And: The updated secret name is reflected in the main view
+
+Scenario #2:
+    Given: The application is open and displays a list of secrets
+    When: I expand a secret section
+    And: I click the "settings" icon (⛭)
+    And: I click the "Modify" button
+    Then: A dialog titled "Modify Secret: <secret_name>" appears
+    And: The dialog is pre-filled with the secret's data
+    And: I see the name of the secret in editable field at the bottom left corner of the window in line with "Save" button
+    When: I change the value the name of the secret to existing secret that has a different name
+    And: I click the "Save" button
+    Then: Error message shows up saying "Unable to save secret: the secret with this name already exists"
+
+
+Technical notes:
+1. modify_secret component should have editable field with secret_name on the left in topbottompanel

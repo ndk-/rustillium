@@ -9,3 +9,4 @@ toml = "0.9.2"
 config = "0.15.13"
 wgpu = "25"
 eframe = { version = "0.32.0", features = ["wgpu"] }
+git2 = "0.20.2"

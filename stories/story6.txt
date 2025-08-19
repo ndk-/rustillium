@@ -1,0 +1,18 @@
+As a user
+I want to be able to configure my GPG recipient email address
+So that the application knows which GPG key to use for encryption
+
+Scenario #1:
+  Given: I have set the RUSTILLIUM_RECIPIENT_EMAIL environment variable
+  When: I open my application
+  Then: The application uses the provided email address for encryption
+
+Scenario #2:
+  Given: I have a configuration file config.toml in directory $HOME/.config/rustillium with a recipient_email setting
+  When: I open my application
+  Then: The application uses the email address from the configuration file for encryption
+
+Scenario #3:
+  Given: I have both the configuration file from scenario #2 and the environment variable from scenario #1
+  When: I open my application
+  Then: The application uses the environment variable (precedence rule)

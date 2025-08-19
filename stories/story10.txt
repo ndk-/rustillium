@@ -1,0 +1,41 @@
+As a user
+I want to be able to delete an existing secret
+So that I can keep my secrets up to date
+
+Scenario #1:
+    Given: The application is open and displays a list of secrets
+    When: I expand a secret section
+    And: I click the "settings" icon (⛭)
+    And: I click the "Delete" button
+    Then: A dialog titled "Delete Secret: <secret_name>" appears
+    And: The dialog is showing the editable field prompting me to an enter a secret name and "Delete" and "Cancel" buttons
+    Then: I type a secret name 
+    And: I click the "Delete" button
+    Then: The encrypted file for that secret is deleted
+    And: The dialog closes
+    And: The updated list of secrets is reflected in the main view
+
+Scenario #2:
+    Given: The application is open and displays a list of secrets
+    When: I expand a secret section
+    And: I click the "settings" icon (⛭)
+    And: I click the "Delete" button
+    Then: A dialog titled "Delete Secret: <secret_name>" appears
+    And: The dialog is showing the editable field prompting me to an enter a secret name and "Delete" and "Cancel" buttons
+    Then: I type an invalid secret name 
+    And: I click the "Delete" button
+    Then: The dialog shows an error message stating that I didn't enter correct secret name
+    And: Nothing else happens
+
+Scenario #3:
+    Given: The application is open and displays a list of secrets
+    When: I expand a secret section
+    And: I click the "settings" icon (⛭)
+    And: I click the "Delete" button
+    Then: A dialog titled "Delete Secret: <secret_name>" appears
+    And: The dialog is showing the editable field prompting me to an enter a secret name and "Delete" and "Cancel" buttons
+    Then: I type an invalid secret name 
+    And: I click the "Cancel" button
+    Then: The dialog closes
+    And: Nothing else happens
+

@@ -1,0 +1,16 @@
+As a user
+I want to be able to modify an existing secret
+So that I can update my credentials or other information
+
+Scenario: User modifies an existing secret
+  Given: The application is open and displays a list of secrets
+  When: I expand a secret section
+  And: I click the "settings" icon (⛭)
+  And: I click the "Modify" button
+  Then: A dialog titled "Modify Secret: <secret_name>" appears
+  And: The dialog is pre-filled with the secret's data
+  When: I change the value of a field
+  And: I click the "Save" button
+  Then: The encrypted file for that secret is updated with the new data
+  And: The dialog closes
+  And: The updated secret information is reflected in the main view

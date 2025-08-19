@@ -1,0 +1,24 @@
+As a user
+I want to be able to create a new secret
+So that I can store new credentials for a website or application
+
+Scenario: User creates a new secret with default fields
+  Given: The application is open
+  When: I click the "Add Secret" button
+  Then: A dialog titled "Add New Secret" appears
+  And: The dialog contains a field for the secret's name
+  And: The dialog contains fields for "username" and "password"
+  And: I can enter values for these fields
+  When: I click the "Save" button
+  Then: A new encrypted file is created with the secret's name
+  And: The file contains the username and password I entered
+  And: The dialog closes
+  And: The new secret appears in the main list of secrets
+
+Scenario: User adds a custom field to a new secret
+  Given: The "Add New Secret" dialog is open
+  When: I click the "Add" button
+  Then: A new empty field row appears with "nameX" and "valueX"
+  And: I can edit the name and value of the new field
+  When: I click the "Save" button
+  Then: The new secret is saved with the custom field
