@@ -48,3 +48,21 @@ To enable TOTP code generation for a secret, you must add a specific field when 
 - **Value:** The full `otpauth://` URL provided by the service (e.g., `otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example`).
 
 When you view a secret containing this field, Rustillium will automatically display the refreshing 6-digit TOTP code and a countdown timer instead of the raw URL.
+
+# Reporting Bugs
+
+If you encounter an issue or the application crashes, you can help by providing detailed logs. The application uses logging to print detailed error information to the console.
+
+To get the most detailed logs, run the application from your terminal using the following command:
+
+```sh
+RUST_LOG=debug cargo run
+```
+
+If the application panics, you can get a full stack trace (a "backtrace") by running:
+
+```sh
+RUST_BACKTRACE=1 cargo run
+```
+
+Please include the console output from these commands when you report an issue.

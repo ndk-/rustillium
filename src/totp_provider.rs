@@ -1,16 +1,16 @@
+use anyhow::{Context, Result};
 use totp_rs::TOTP;
-use std::error;
 
 pub struct TOTPDisplay {
     pub code: String,
     pub remaining_seconds: u64,
 }
 
-pub fn generate_totp_display_info(url: &str) -> Result<TOTPDisplay, Box<dyn error::Error>> {
-    let totp = TOTP::from_url(url).expect("Invalid TOTP URL format");
+pub fn generate_totp_display_info(url: &str) -> Result<TOTPDisplay> {
+    let totp = TOTP::from_url(url).context("Failed to parse TOTP URL")?;
     
-    let code = totp.generate_current().expect("Failed to generate TOTP code");
-    let remaining_seconds = totp.ttl().expect("Cannot find time to live");
+    let code = totp.generate_current().context("Failed to generate TOTP code")?;
+    let remaining_seconds = totp.ttl().unwrap_or(0); // pragmatic error handling for very rare edge case
     
     Ok(TOTPDisplay { code, remaining_seconds })
 }

@@ -1,4 +1,5 @@
 use config::Config;
+use env_logger;
 use std::{env::var as environment_variable, rc::Rc};
 
 pub mod credentials_provider;
@@ -10,6 +11,7 @@ pub mod totp_provider;
 use crate::{credentials_provider::CredentialsProvider, view_secret::ViewSecretUI};
 
 fn main() -> eframe::Result {
+    env_logger::init();
     let credentials_provider = configure_credential_provider();
 
     let view_secret_ui = ViewSecretUI::new(&Rc::new(credentials_provider));

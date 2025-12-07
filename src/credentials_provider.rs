@@ -1,9 +1,9 @@
+use anyhow::{anyhow, Context, Result};
 use git2::IndexAddOption;
 use git2::Repository;
 use git2::Signature;
-use gpgme::{Context, Key, Protocol};
+use gpgme::{Context as GpgmeContext, Key, Protocol};
 use std::collections::HashMap;
-use std::error;
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -19,7 +19,7 @@ pub struct CredentialsProvider {
 impl CredentialsProvider {
     pub fn new(directory_name: &str, recipient_email: &str) -> Self {
         let path = PathBuf::from(directory_name);
-        let repository = Self::initialize_repository(&path).expect("Unable to initialize secrets repository");
+        let repository = Self::initialize_repository(&path).expect("Fatal: Failed to open or initialize secrets repository.");
         Self {
             path,
             recipient_email: recipient_email.to_string(),
@@ -27,17 +27,11 @@ impl CredentialsProvider {
         }
     }
 
-    fn initialize_repository(path: &PathBuf) -> Result<Repository, Box<dyn error::Error>> {
-        match Repository::open(path) {
-            Ok(repo) => Ok(repo),
-            Err(_) => {
-                let repo = Repository::init(path)?;
-                Ok(repo)
-            }
-        }
+    fn initialize_repository(path: &PathBuf) -> Result<Repository> {
+        Ok(Repository::open(path).or_else(|_| Repository::init(path))?)
     }
 
-    fn commit(&self, message: &str) -> Result<(), Box<dyn error::Error>> {
+    fn commit(&self, message: &str) -> Result<()> {
         let parent_commit = self.get_parent_commit()?;
 
         let tree_id = {
@@ -48,39 +42,39 @@ impl CredentialsProvider {
         };
 
         let tree = self.repository.find_tree(tree_id)?;
-
         let author = Signature::now("Rustillium", "rustillium@app.local")?;
 
-        if let Some(existing_parent_commit) = parent_commit {
-            self.repository.commit(Some("HEAD"), &author, &author, message, &tree, &[&existing_parent_commit])?;
-        } else {
-            self.repository.commit(Some("HEAD"), &author, &author, message, &tree, &[])?;
-        }
+        let parents = parent_commit.map(|c| vec![c]).unwrap_or_default();
+        let parent_commits_refs: Vec<&git2::Commit> = parents.iter().collect();
 
+        self.repository.commit(Some("HEAD"), &author, &author, message, &tree, parent_commits_refs.as_slice())?;
         Ok(())
     }
 
-    fn get_parent_commit(&self) -> Result<Option<git2::Commit<'_>>, Box<dyn error::Error>> {
+
+    fn get_parent_commit(&self) -> Result<Option<git2::Commit<'_>>> {
         match self.repository.head() {
             Ok(head) => {
-                let target_oid = head.target();
-                let mut parent_commit: Option<git2::Commit> = None;
-                if let Some(oid) = target_oid {
-                    parent_commit = Some(self.repository.find_commit(oid)?);
+                if let Some(oid) = head.target() {
+                    Ok(Some(self.repository.find_commit(oid)?))
+                } else {
+                    Ok(None)
                 }
-                Ok(parent_commit)
             }
-            Err(_) => {
-                return Ok(None);
+            Err(e) => {
+                if e.code() == git2::ErrorCode::UnbornBranch || e.code() == git2::ErrorCode::NotFound {
+                    Ok(None)
+                } else {
+                    Err(e).map_err(|e| e.into())
+                }
             }
         }
     }
 
-    pub fn load_secret_names(self: &Self) -> Result<Vec<String>, Box<dyn error::Error>> {
+    pub fn load_secret_names(self: &Self) -> Result<Vec<String>> {
         let file_names = fs::read_dir(&self.path)?;
 
         let mut secret_names: Vec<String> = file_names
-            .into_iter()
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.path().is_file())
             .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "gpg"))
@@ -91,22 +85,25 @@ impl CredentialsProvider {
         Ok(secret_names)
     }
 
-    pub fn load_secrets(self: &Self, secret_name: &str) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
-        let mut context = Context::from_protocol(Protocol::OpenPgp)?;
-        let mut secrets_file = fs::File::open(self.path.join(format!("{}.gpg", secret_name)))?;
+    pub fn load_secrets(self: &Self, secret_name: &str) -> Result<HashMap<String, String>> {
+        let file_path = self.path.join(format!("{}.gpg", secret_name));
+        let mut context = GpgmeContext::from_protocol(Protocol::OpenPgp)?;
+        let mut secrets_file = fs::File::open(&file_path).context(format!("Failed to open secret file {:?}", file_path))?;
         let mut secrets_bytes = Vec::new();
-        context.decrypt(&mut secrets_file, &mut secrets_bytes)?;
+        context.decrypt(&mut secrets_file, &mut secrets_bytes).context("Failed to decrypt GPG content")?;
 
-        let secrets_content = String::from_utf8(secrets_bytes)?;
-        Ok(toml::from_str(secrets_content.as_str())?)
+        let secrets_content = String::from_utf8(secrets_bytes).context("Decrypted content is not valid UTF-8")?;
+        toml::from_str(secrets_content.as_str()).context("Failed to parse TOML from decrypted secret")
     }
 
-    fn save_secret(&self, secret_name: &str, secrets: &HashMap<String, String>) -> Result<(), Box<dyn error::Error>> {
+    fn save_secret(&self, secret_name: &str, secrets: &HashMap<String, String>) -> Result<()> {
         let toml_string = toml::to_string(secrets)?;
-        let mut context = Context::from_protocol(Protocol::OpenPgp)?;
+        let mut context = GpgmeContext::from_protocol(Protocol::OpenPgp)?;
 
-        let recipients: Vec<Key> = context.find_keys([self.recipient_email.as_str()])?.filter_map(Result::ok).collect();
-        let recipient = recipients.get(0).ok_or("recipient key not found")?;
+        let recipients: Vec<Key> = context.find_keys([self.recipient_email.as_str()])?
+            .filter_map(Result::ok).collect();
+
+        let recipient = recipients.get(0).ok_or_else(|| anyhow!("Recipient GPG key for '{}' not found.", self.recipient_email))?;
 
         let mut ciphertext = Vec::new();
         context.encrypt(Some(recipient), toml_string.as_bytes(), &mut ciphertext)?;
@@ -116,14 +113,14 @@ impl CredentialsProvider {
         Ok(())
     }
 
-    pub fn update_secret(&self, original_name: Option<&str>, new_name: &str, secrets_data: &HashMap<String, String>) -> Result<(), Box<dyn error::Error>> {
+    pub fn update_secret(&self, original_name: Option<&str>, new_name: &str, secrets_data: &HashMap<String, String>) -> Result<()> {
         let new_path = self.path.join(format!("{}.gpg", new_name));
         let is_renaming = original_name.is_some() && original_name.unwrap() != new_name;
         let is_creating = original_name.is_none();
 
         if is_renaming || is_creating {
             if new_path.exists() {
-                return Err("A secret with this name already exists.".into());
+                return Err(anyhow!("A secret with the name '{}' already exists.", new_name));
             }
         }
 
@@ -139,7 +136,7 @@ impl CredentialsProvider {
         Ok(())
     }
 
-    fn commit_on_update(&self, original_name: Option<&str>, new_name: &str) -> Result<(), Box<dyn error::Error>> {
+    fn commit_on_update(&self, original_name: Option<&str>, new_name: &str) -> Result<()> {
         let is_renaming = original_name.is_some() && original_name.unwrap() != new_name;
         let is_creating = original_name.is_none();
 
@@ -154,7 +151,7 @@ impl CredentialsProvider {
         Ok(())
     }
 
-    pub fn delete_secret(&self, secret_name: &str) -> Result<(), Box<dyn error::Error>> {
+    pub fn delete_secret(&self, secret_name: &str) -> Result<()> {
         let path = self.path.join(format!("{}.gpg", secret_name));
         fs::remove_file(path)?;
         self.commit(&format!("Delete secret: {}", secret_name))?;

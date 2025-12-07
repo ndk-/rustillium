@@ -1,0 +1,29 @@
+As a user
+I want to see clear, non-crashing error messages when something goes wrong
+So that I can understand the problem and provide detailed reports if necessary
+
+Scenario: Invalid TOTP URL
+    Given: I have a secret with a malformed "otpauth://" URL in its "totpurl" field
+    When: I expand that secret's section
+    Then: The application does not crash
+    And: In place of the TOTP code, a user-friendly error message is displayed (e.g., "Error: Invalid TOTP URL")
+    And: All other fields for that secret are still displayed correctly
+    And: The console logs a detailed, technical error message for debugging
+
+Scenario: Corrupt or Unreadable Secret
+    Given: I have a secret file that is corrupt or cannot be decrypted by my GPG key
+    When: I expand that secret's section
+    Then: The application does not crash
+    And: The body of the expanded section displays a user-friendly error message (e.g., "Error: Could not load secret.")
+    And: The console logs a detailed, technical error message for debugging
+
+Scenario: Missing Configuration at Startup
+    Given: My application configuration is missing a required value (e.g., recipient_email)
+    When: I try to launch the application
+    Then: The application panics and exits
+    And: The panic message clearly explains which configuration key is missing and where to set it
+
+Technical Notes:
+1. User-facing errors should be simple and displayed directly in the UI.
+2. Technical errors (including detailed error messages and potential stack traces) should be logged to the console using a standard logging library.
+3. The README should be updated to explain how a user can enable detailed logging for bug reports.

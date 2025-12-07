@@ -1,11 +1,13 @@
 use crate::credentials_provider::CredentialsProvider;
 use crate::delete_secret::DeleteSecretUI;
 use crate::modify_secret::ModifySecretUI;
+use crate::totp_provider::generate_totp_display_info;
+use anyhow::Result;
 use eframe::egui::{Align, Button, Context, Id, Layout, Popup, PopupCloseBehavior, RectAlign, Ui, Widget, collapsing_header};
+use log;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
-use crate::totp_provider::{generate_totp_display_info};
 
 pub struct SecretSectionUI {
     credentials_provider: Rc<CredentialsProvider>,
@@ -16,6 +18,8 @@ struct PopupState {
     id: Id,
     opened_at: Instant,
 }
+
+type CachedSecretsResult = Result<Vec<(String, String)>, String>;
 
 impl SecretSectionUI {
     pub fn new(credentials_provider: &Rc<CredentialsProvider>) -> Self {
@@ -28,14 +32,29 @@ impl SecretSectionUI {
     pub fn show(&mut self, ui: &mut Ui, secret: &str, modify_secret_ui: &mut ModifySecretUI, delete_secret_ui: &mut DeleteSecretUI) {
         let collapsible_state = collapsing_header::CollapsingState::load_with_default_open(ui.ctx(), Id::new(secret), false);
         let is_collapsible_open = collapsible_state.is_open();
+
+        let cache_id = Id::new(secret).with("cache");
+        if !is_collapsible_open && ui.memory(|mem| mem.data.get_temp::<CachedSecretsResult>(cache_id).is_some()) {
+            ui.memory_mut(|m| m.data.remove::<CachedSecretsResult>(cache_id));
+        }
+
         collapsible_state
             .show_header(ui, |ui| {
                 Self::build_header(secret, is_collapsible_open, modify_secret_ui, delete_secret_ui, ui);
             })
             .body(|ui| {
-                self.load_secrets(ui, secret).iter().for_each(|(key, value)| {
-                    self.build_secret_section(key, value, ui);
-                });
+                if is_collapsible_open {
+                    match self.load_secrets(ui, secret) {
+                        Ok(secrets) => {
+                            secrets.iter().for_each(|(key, value)| {
+                                self.build_secret_section(key, value, ui);
+                            });
+                        }
+                        Err(_) => {
+                            ui.colored_label(ui.style().visuals.error_fg_color, "Error: Could not load secret.");
+                        }
+                    }
+                }
             });
     }
 
@@ -48,28 +67,36 @@ impl SecretSectionUI {
     }
 
     fn build_totp_section(&mut self, key: &String, value: &String, ui: &mut Ui) {
-        let totp = generate_totp_display_info(&value).expect("Cannot parse totp code");
         ui.horizontal(|ui| {
             ui.label("TOTP code");
             ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
                 let popup_id = Id::new(key);
-                let totp_code_as_button = Button::new(&totp.code).fill(ui.ctx().theme().default_visuals().faint_bg_color).ui(ui);
+                match generate_totp_display_info(value) {
+                    Ok(totp) => {
+                        let totp_code_as_button = Button::new(&totp.code).fill(ui.ctx().theme().default_visuals().faint_bg_color).ui(ui);
 
-                if totp_code_as_button.clicked() {
-                    self.copy_secret(&totp.code, popup_id, ui);
+                        if totp_code_as_button.clicked() {
+                            self.copy_secret(&totp.code, popup_id, ui);
+                        }
+
+                        ui.ctx().request_repaint_after(Duration::from_secs(1));
+
+                        Popup::from_toggle_button_response(&totp_code_as_button)
+                            .close_behavior(PopupCloseBehavior::CloseOnClick)
+                            .id(popup_id)
+                            .show(|ui| {
+                                ui.label("TOTP code has been copied!");
+                            });
+                        ui.label(format!("{} seconds left", totp.remaining_seconds));
+                    }
+                    Err(e) => {
+                        log::error!("Failed to generate TOTP for key '{}': {:#?}", key, e);
+                        ui.colored_label(ui.style().visuals.error_fg_color, "Error: Invalid TOTP URL");
+                    }
                 }
-
-                ui.ctx().request_repaint_after(Duration::from_secs(1));
-
-                Popup::from_toggle_button_response(&totp_code_as_button).close_behavior(PopupCloseBehavior::CloseOnClick).id(popup_id).show(|ui| {
-                    ui.label("TOTP code has been copied!");
-                });
-                ui.label(format!("{} seconds left", totp.remaining_seconds));
             });
-            
         });
     }
-
 
     fn build_single_secret_section(&mut self, key: &String, value: &String, ui: &mut Ui) {
         ui.horizontal(|ui| {
@@ -82,9 +109,12 @@ impl SecretSectionUI {
                     self.copy_secret(value, popup_id, ui);
                 }
 
-                Popup::from_toggle_button_response(&secret_value_as_button).close_behavior(PopupCloseBehavior::CloseOnClick).id(popup_id).show(|ui| {
-                    ui.label("Secret has been copied!");
-                });
+                Popup::from_toggle_button_response(&secret_value_as_button)
+                    .close_behavior(PopupCloseBehavior::CloseOnClick)
+                    .id(popup_id)
+                    .show(|ui| {
+                        ui.label("Secret has been copied!");
+                    });
             });
         });
     }
@@ -122,20 +152,24 @@ impl SecretSectionUI {
         }
     }
 
-    fn load_secrets(&self, ui: &mut Ui, secret: &str) -> Vec<(String, String)> {
+    fn load_secrets(&self, ui: &mut Ui, secret: &str) -> CachedSecretsResult {
         let cache_id = Id::new(secret).with("cache");
-        let cached_secrets: Option<Vec<(String, String)>> = ui.data(|reader| reader.get_temp(cache_id));
 
-        let secrets_to_display = if let Some(secrets) = cached_secrets {
-            secrets
-        } else {
-            let loaded_secrets = Self::to_displayed_secrets(self.credentials_provider.load_secrets(secret).expect("Cannot load secrets file"));
-            ui.data_mut(|writer| {
-                writer.insert_temp(cache_id, loaded_secrets.clone());
-            });
-            loaded_secrets
+        if let Some(cached_result) = ui.data(|reader| reader.get_temp::<CachedSecretsResult>(cache_id)) {
+            return cached_result;
+        }
+
+        let result = self.credentials_provider.load_secrets(secret);
+        let final_result_to_cache = match result {
+            Ok(loaded_secrets) => Ok(Self::to_displayed_secrets(loaded_secrets)),
+            Err(e) => {
+                log::error!("Failed to load secret '{}': {:#?}", secret, e);
+                Err(format!("Error: {:#?}", e))
+            }
         };
-        secrets_to_display
+
+        ui.data_mut(|writer| writer.insert_temp(cache_id, final_result_to_cache.clone()));
+        final_result_to_cache
     }
 
     fn to_displayed_secrets(mut secrets: HashMap<String, String>) -> Vec<(String, String)> {
