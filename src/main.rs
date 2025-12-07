@@ -5,6 +5,7 @@ pub mod credentials_provider;
 pub mod delete_secret;
 pub mod modify_secret;
 pub mod view_secret;
+pub mod totp_provider;
 
 use crate::{credentials_provider::CredentialsProvider, view_secret::ViewSecretUI};
 

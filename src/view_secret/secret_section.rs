@@ -5,6 +5,7 @@ use eframe::egui::{Align, Button, Context, Id, Layout, Popup, PopupCloseBehavior
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
+use crate::totp_provider::{generate_totp_display_info};
 
 pub struct SecretSectionUI {
     credentials_provider: Rc<CredentialsProvider>,
@@ -33,10 +34,42 @@ impl SecretSectionUI {
             })
             .body(|ui| {
                 self.load_secrets(ui, secret).iter().for_each(|(key, value)| {
-                    self.build_single_secret_section(key, value, ui);
+                    self.build_secret_section(key, value, ui);
                 });
             });
     }
+
+    fn build_secret_section(&mut self, key: &String, value: &String, ui: &mut Ui) {
+        if key == "totpurl" {
+            self.build_totp_section(key, value, ui);
+        } else {
+            self.build_single_secret_section(key, value, ui);
+        }
+    }
+
+    fn build_totp_section(&mut self, key: &String, value: &String, ui: &mut Ui) {
+        let totp = generate_totp_display_info(&value).expect("Cannot parse totp code");
+        ui.horizontal(|ui| {
+            ui.label("TOTP code");
+            ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
+                let popup_id = Id::new(key);
+                let totp_code_as_button = Button::new(&totp.code).fill(ui.ctx().theme().default_visuals().faint_bg_color).ui(ui);
+
+                if totp_code_as_button.clicked() {
+                    self.copy_secret(&totp.code, popup_id, ui);
+                }
+
+                ui.ctx().request_repaint_after(Duration::from_secs(1));
+
+                Popup::from_toggle_button_response(&totp_code_as_button).close_behavior(PopupCloseBehavior::CloseOnClick).id(popup_id).show(|ui| {
+                    ui.label("TOTP code has been copied!");
+                });
+                ui.label(format!("{} seconds left", totp.remaining_seconds));
+            });
+            
+        });
+    }
+
 
     fn build_single_secret_section(&mut self, key: &String, value: &String, ui: &mut Ui) {
         ui.horizontal(|ui| {
@@ -108,6 +141,9 @@ impl SecretSectionUI {
     fn to_displayed_secrets(mut secrets: HashMap<String, String>) -> Vec<(String, String)> {
         let mut result: Vec<(String, String)> = Vec::new();
 
+        if let Some(totpurl) = secrets.remove("totpurl") {
+            result.push(("totpurl".to_string(), totpurl));
+        }
         if let Some(username) = secrets.remove("username") {
             result.push(("username".to_string(), username));
         }

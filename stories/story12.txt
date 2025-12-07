@@ -1,0 +1,16 @@
+As a user
+I want to be able to store a TOTP (Time-based One-Time Password) secret and see the current code
+So that I can use two-factor authentication without needing a separate authenticator app
+
+Scenario: Viewing and interacting with a TOTP field
+    Given: I have a secret that contains a field with a valid "otpauth://" URL, keyed as "totpurl"
+    When: I expand that secret's section in the main view
+    Then: The application displays the current 6-digit TOTP code
+    And: The application clearly indicates the remaining time until the code refreshes
+    And: The displayed code automatically updates when the time period expires
+    And: Clicking the displayed TOTP code copies it to my clipboard, showing a brief confirmation
+
+Technical Notes:
+1. For this feature to work, the `otpauth://` URL should be stored as a regular field with the key "totpurl".
+2. The UI will handle parsing the URL and generating the code at display time. No backend changes are required for storage.
+3. Editing the `otpauth://` URL is handled by the existing "Modify Secret" functionality.

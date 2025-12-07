@@ -6,6 +6,7 @@ Rustillium is a GUI-based credential manager written in Rust that helps you stor
 *   **Intuitive Graphical User Interface (GUI):** Easily interact with your secrets through a user-friendly interface.
 *   **Comprehensive Secret Operations:** Create, view, search, modify, rename, and delete secrets.
 *   **Clipboard Integration:** Quickly copy secret values to your clipboard for convenience.
+*   **TOTP Support:** Automatically generates and displays Time-based One-Time Password (TOTP) codes for secrets that include an `otpauth://` URL.
 *   **Automatic Version Control:** All changes to your secrets are automatically tracked and versioned using Git, providing a complete history and enabling future recovery.
 *   **Flexible Configuration:** Customize the location of your encrypted secrets and your GPG recipient email via configuration files or environment variables.
 
@@ -36,3 +37,14 @@ There are 2 configuration pieces that are needed:
     1. By default, there is no default value, the application will not start.
     1. Via configuration file located at: `$HOME/.config/rustillium/config.toml` with `recipient_email` defined
     1. Via environment variable: `RUSTILLIUM_RECIPIENT_EMAIL`
+
+# Usage
+
+## TOTP (Time-based One-Time Password)
+
+To enable TOTP code generation for a secret, you must add a specific field when creating or modifying the secret.
+
+- **Key:** `totpurl`
+- **Value:** The full `otpauth://` URL provided by the service (e.g., `otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example`).
+
+When you view a secret containing this field, Rustillium will automatically display the refreshing 6-digit TOTP code and a countdown timer instead of the raw URL.
