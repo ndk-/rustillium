@@ -1,0 +1,12 @@
+As a user
+I want to see the current application version in the main window
+So that I can easily tell which version I'm running for updates or bug reports
+
+Scenario: Viewing the application version
+    Given: The application is open
+    When: I look at the main window title bar
+    Then: The title displays "Rustillium v." followed by the current version number (e.g., "Rustillium v.0.3.2")
+
+Technical Notes:
+1. The version number is retrieved from the `CARGO_PKG_VERSION` environment variable at compile time.
+2. The `ViewSecretUI` is responsible for formatting the title and passing it to the `eframe` initialization.

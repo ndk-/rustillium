@@ -1,0 +1,12 @@
+As a user
+I want to be able to use TOTP codes from legacy or non-RFC compliant services
+So that I can use two-factor authentication for more services
+
+Scenario: Using a non-RFC compliant TOTP URL
+    Given: I have a secret with a "totpurl" that is non-RFC compliant (e.g., missing some required parameters or having slightly malformed structure)
+    When: I expand that secret's section in the main view
+    Then: The application parses the URL using "unchecked" mode and attempts to generate the code
+    And: If successful, the current 6-digit TOTP code and remaining time are displayed as usual
+
+Technical Notes:
+1. The application uses `TOTP::from_url_unchecked(url)` to provide maximum compatibility with various TOTP implementations that might not strictly follow the RFC specification.
