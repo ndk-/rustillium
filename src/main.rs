@@ -13,8 +13,9 @@ use crate::{credentials_provider::CredentialsProvider, view_secret::ViewSecretUI
 fn main() -> eframe::Result {
     env_logger::init();
     let credentials_provider = configure_credential_provider();
+    let version = environment_variable("CARGO_PKG_VERSION").unwrap_or("0.0.0".to_string());
 
-    let view_secret_ui = ViewSecretUI::new(&Rc::new(credentials_provider));
+    let view_secret_ui = ViewSecretUI::new(&Rc::new(credentials_provider), version);
 
     return view_secret_ui.show();
 }
@@ -22,7 +23,7 @@ fn main() -> eframe::Result {
 fn configure_credential_provider() -> CredentialsProvider {
     let mut config_path = environment_variable("HOME").unwrap_or(".".to_string());
     config_path.push_str("/.config/rustillium/config.toml");
-    
+
     let config = Config::builder()
         .add_source(config::File::with_name(&config_path).required(false))
         .add_source(config::Environment::with_prefix("RUSTILLIUM"))

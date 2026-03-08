@@ -15,10 +15,11 @@ pub struct ViewSecretUI {
     modify_secret_ui: ModifySecretUI,
     delete_secret_ui: DeleteSecretUI,
     secret_section_ui: SecretSectionUI,
+    version: String
 }
 
 impl ViewSecretUI {
-    pub fn new(credentials_provider: &Rc<CredentialsProvider>) -> Self {
+    pub fn new(credentials_provider: &Rc<CredentialsProvider>, version: String) -> Self {
         Self {
             credentials_provider: Rc::clone(credentials_provider),
             search_field: Id::new("search_field"),
@@ -26,6 +27,7 @@ impl ViewSecretUI {
             modify_secret_ui: ModifySecretUI::new(credentials_provider),
             delete_secret_ui: DeleteSecretUI::new(credentials_provider),
             secret_section_ui: SecretSectionUI::new(credentials_provider),
+            version: version
         }
     }
 
@@ -36,8 +38,9 @@ impl ViewSecretUI {
         };
 
         let mut search_term = "".to_owned();
+        let title = format!("Rustillium v.{}", self.version);
 
-        eframe::run_simple_native("Rustillium", options, move |ctx, _frame| {
+        eframe::run_simple_native(&title, options, move |ctx, _frame| {
             let secrets = self.load_secret_names(ctx);
 
             self.create_keyboard_shortcuts(ctx);
