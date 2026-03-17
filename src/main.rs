@@ -13,9 +13,9 @@ use crate::{credentials_provider::CredentialsProvider, view_secret::ViewSecretUI
 fn main() -> eframe::Result {
     env_logger::init();
     let credentials_provider = configure_credential_provider();
-    let version = environment_variable("CARGO_PKG_VERSION").unwrap_or("0.0.0".to_string());
+    let version = env!("CARGO_PKG_VERSION");
 
-    let view_secret_ui = ViewSecretUI::new(&Rc::new(credentials_provider), version);
+    let view_secret_ui = ViewSecretUI::new(&Rc::new(credentials_provider), version.to_string());
 
     return view_secret_ui.show();
 }
