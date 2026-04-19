@@ -1,7 +1,8 @@
 use config::Config;
-use env_logger;
 use std::{env::var as environment_variable, rc::Rc};
 
+
+pub mod cache;
 pub mod credentials_provider;
 pub mod delete_secret;
 pub mod modify_secret;
@@ -15,9 +16,10 @@ fn main() -> eframe::Result {
     let credentials_provider = configure_credential_provider();
     let version = env!("CARGO_PKG_VERSION");
 
-    let view_secret_ui = ViewSecretUI::new(&Rc::new(credentials_provider), version.to_string());
+    let version = version.to_string();
+    let view_secret_ui = ViewSecretUI::new(&Rc::new(credentials_provider), version.clone());
 
-    return view_secret_ui.show();
+    view_secret_ui.run(version)
 }
 
 fn configure_credential_provider() -> CredentialsProvider {
@@ -33,5 +35,5 @@ fn configure_credential_provider() -> CredentialsProvider {
     let secrets_directory = config.get_string("secrets_directory").unwrap_or("./enc".to_string());
     let recipient_email = config.get_string("recipient_email").expect("recipient_email is not set in the configuration");
 
-    return CredentialsProvider::new(&secrets_directory, &recipient_email);
+    CredentialsProvider::new(&secrets_directory, &recipient_email)
 }

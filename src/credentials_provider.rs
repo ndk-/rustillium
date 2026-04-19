@@ -71,13 +71,13 @@ impl CredentialsProvider {
         }
     }
 
-    pub fn load_secret_names(self: &Self) -> Result<Vec<String>> {
+    pub fn load_secret_names(&self) -> Result<Vec<String>> {
         let file_names = fs::read_dir(&self.path)?;
 
         let mut secret_names: Vec<String> = file_names
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.path().is_file())
-            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "gpg"))
+            .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "gpg"))
             .filter_map(|entry| entry.path().file_stem().and_then(|stem| stem.to_str()).map(|stem| stem.to_string()))
             .collect();
 
@@ -85,7 +85,7 @@ impl CredentialsProvider {
         Ok(secret_names)
     }
 
-    pub fn load_secrets(self: &Self, secret_name: &str) -> Result<HashMap<String, String>> {
+    pub fn load_secrets(&self, secret_name: &str) -> Result<HashMap<String, String>> {
         let file_path = self.path.join(format!("{}.gpg", secret_name));
         let mut context = GpgmeContext::from_protocol(Protocol::OpenPgp)?;
         let mut secrets_file = fs::File::open(&file_path).context(format!("Failed to open secret file {:?}", file_path))?;
@@ -103,7 +103,7 @@ impl CredentialsProvider {
         let recipients: Vec<Key> = context.find_keys([self.recipient_email.as_str()])?
             .filter_map(Result::ok).collect();
 
-        let recipient = recipients.get(0).ok_or_else(|| anyhow!("Recipient GPG key for '{}' not found.", self.recipient_email))?;
+        let recipient = recipients.first().ok_or_else(|| anyhow!("Recipient GPG key for '{}' not found.", self.recipient_email))?;
 
         let mut ciphertext = Vec::new();
         context.encrypt(Some(recipient), toml_string.as_bytes(), &mut ciphertext)?;
@@ -118,11 +118,10 @@ impl CredentialsProvider {
         let is_renaming = original_name.is_some() && original_name.unwrap() != new_name;
         let is_creating = original_name.is_none();
 
-        if is_renaming || is_creating {
-            if new_path.exists() {
+        if (is_renaming || is_creating)
+            && new_path.exists() {
                 return Err(anyhow!("A secret with the name '{}' already exists.", new_name));
             }
-        }
 
         self.save_secret(new_name, secrets_data)?;
 

@@ -1,7 +1,8 @@
 use std::rc::Rc;
 
+use crate::cache::CachedSecretsResult;
 use crate::credentials_provider::CredentialsProvider;
-use eframe::egui::{Align, CentralPanel, Context, Id, Layout, TopBottomPanel, Ui, ViewportBuilder, ViewportId};
+use eframe::egui::{Align, CentralPanel, Id, Layout, Panel, Ui, ViewportBuilder, ViewportId};
 
 const ADD_SECRET_TITLE: &str = "Add New Secret";
 const MODIFY_SECRET_TITLE: &str = "Modify Secret";
@@ -52,7 +53,7 @@ impl ModifySecretUI {
         let mut secrets: Vec<(String, String)> = self
             .credentials_provider
             .load_secrets(secret_name)
-            .expect(format!("cannot load secret {}", secret_name).as_str())
+            .unwrap_or_else(|_| panic!("cannot load secret {}", secret_name))
             .into_iter()
             .collect();
 
@@ -90,16 +91,16 @@ impl ModifySecretUI {
         }
     }
 
-    pub fn show(&mut self, ctx: &Context) {
+    pub fn show(&mut self, ui: &mut Ui) {
         if self.open_dialog {
             let modify_secret_dialog = ViewportBuilder::default().with_title(self.title.as_str()).with_close_button(true).with_decorations(true);
             let dialog_id = ViewportId::from_hash_of("modify_secret_dialog");
 
-            ctx.show_viewport_immediate(dialog_id, modify_secret_dialog, |ctx, _| {
-                if ctx.input(|input_state| input_state.viewport().close_requested()) {
+            ui.ctx().show_viewport_immediate(dialog_id, modify_secret_dialog, |ui, _| {
+                if ui.ctx().input(|input_state| input_state.viewport().close_requested()) {
                     self.close();
                 }
-                TopBottomPanel::bottom(Id::new("modify_bottom_panel")).show(ctx, |ui| {
+                Panel::bottom(Id::new("modify_bottom_panel")).show_inside(ui, |ui| {
                     ui.add_space(6.0);
                     ui.horizontal(|ui| {
                         ui.label("Secret name: ");
@@ -109,13 +110,13 @@ impl ModifySecretUI {
                                 self.close();
                             }
                             if ui.button(SAVE_BUTTON_LABEL).clicked() {
-                                self.handle_save(ctx);
+                                self.handle_save(ui);
                             }
                         })
                     });
                     ui.add_space(2.0);
                 });
-                CentralPanel::default().show(ctx, |ui| {
+                CentralPanel::default().show_inside(ui, |ui| {
                     self.show_editable_section(ui);
 
                     ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
@@ -128,7 +129,7 @@ impl ModifySecretUI {
         }
     }
 
-    fn handle_save(&mut self, ctx: &Context) {
+    fn handle_save(&mut self, ui: &mut Ui) {
         if self.updated_secret_name.is_empty() {
             self.error_message = Some("Secret name cannot be empty.".to_string());
         } else {
@@ -137,7 +138,7 @@ impl ModifySecretUI {
 
             match self.credentials_provider.update_secret(original_secret_name, &self.updated_secret_name, &secrets_to_save) {
                 Ok(_) => {
-                    Self::clear_ui_cache(ctx, original_secret_name);
+                    Self::clear_ui_cache(ui, original_secret_name);
                     self.close();
                 }
                 Err(e) => {
@@ -147,13 +148,13 @@ impl ModifySecretUI {
         }
     }
 
-    fn clear_ui_cache(ctx: &Context, original_secret_name: Option<&str>) {
+    fn clear_ui_cache(ui: &mut Ui, original_secret_name: Option<&str>) {
         let secret_names_cache_id = Id::new("secret_names").with("cache");
-        ctx.memory_mut(|m| m.data.remove::<Vec<String>>(secret_names_cache_id));
+        ui.memory_mut(|m| m.data.remove::<Vec<String>>(secret_names_cache_id));
 
         if let Some(name) = original_secret_name {
             let secret_cache_id = Id::new(name).with("cache");
-            ctx.memory_mut(|m| m.data.remove::<Vec<(String, String)>>(secret_cache_id));
+            ui.memory_mut(|m| m.data.remove::<CachedSecretsResult>(secret_cache_id));
         }
     }
 }

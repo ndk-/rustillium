@@ -1,8 +1,8 @@
+use crate::cache::CachedSecretsResult;
 use crate::credentials_provider::CredentialsProvider;
 use crate::delete_secret::DeleteSecretUI;
 use crate::modify_secret::ModifySecretUI;
 use crate::totp_provider::generate_totp_display_info;
-use anyhow::Result;
 use eframe::egui::{Align, Button, Context, Id, Layout, Popup, PopupCloseBehavior, RectAlign, Ui, Widget, collapsing_header};
 use log;
 use std::collections::HashMap;
@@ -18,8 +18,6 @@ struct PopupState {
     id: Id,
     opened_at: Instant,
 }
-
-type CachedSecretsResult = Result<Vec<(String, String)>, String>;
 
 impl SecretSectionUI {
     pub fn new(credentials_provider: &Rc<CredentialsProvider>) -> Self {
@@ -66,7 +64,7 @@ impl SecretSectionUI {
         }
     }
 
-    fn build_totp_section(&mut self, key: &String, value: &String, ui: &mut Ui) {
+    fn build_totp_section(&mut self, key: &String, value: &str, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label("TOTP code");
             ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
@@ -119,12 +117,12 @@ impl SecretSectionUI {
         });
     }
 
-    fn copy_secret(&mut self, value: &String, popup_id: Id, ui: &mut Ui) {
+    fn copy_secret(&mut self, value: &str, popup_id: Id, ui: &mut Ui) {
         self.popup_state = Some(PopupState {
             id: popup_id,
             opened_at: Instant::now(),
         });
-        ui.ctx().copy_text(value.clone());
+        ui.ctx().copy_text(value.to_owned());
     }
 
     fn build_header(secret: &str, is_collapsible_open: bool, modify_secret_ui: &mut ModifySecretUI, delete_secret_ui: &mut DeleteSecretUI, ui: &mut Ui) {
